@@ -85,70 +85,145 @@ function Viewer() {
       // Link tool group to the viewport
       toolGroup?.addViewport(viewportId, renderingEngineId);
 
-      // Set up event listener for image changes to update metadata
-      const imageRenderedCallback = (event: any) => {
-        const eventData = event.detail;
-        const imageId = eventData.imageIds?.[0] || eventData.imageId;
+// Set up event listener for image changes to update metadata
+const imageRenderedCallback = (event: any) => {
+  const eventData = event.detail;
+  const imageId = eventData.imageIds?.[0] || eventData.imageId;
 
-        if (imageId) {
-          const index = imageIdsRef.current.indexOf(imageId);
-          if (index !== -1) {
-            setCurrentImageIndex(index);
+  // Debug what we're receiving
+  console.log("Image rendered event triggered");
+  console.log("Event data:", eventData);
+  console.log("Image ID:", imageId);
+  
+  if (!imageId) {
+    console.log("No image ID found in the event");
+    return;
+  }
 
-            // Extract metadata for the current image
-            try {
-              const dicomMetaData: Record<string, any> = {};
+  const index = imageIdsRef.current.indexOf(imageId);
+  console.log("Image index:", index);
+  
+  if (index !== -1) {
+    setCurrentImageIndex(index);
 
-              // Common DICOM tags to display
-              const tags = [
-                { name: "Patient Name", tag: "00100010" },
-                { name: "Patient ID", tag: "00100020" },
-                { name: "Patient Birth Date", tag: "00100030" },
-                { name: "Study Date", tag: "00080020" },
-                { name: "Study Time", tag: "00080030" },
-                { name: "Study Description", tag: "00081030" },
-                { name: "Series Description", tag: "0008103E" },
-                { name: "Modality", tag: "00080060" },
-                { name: "Image Number", tag: "00200013" },
-                { name: "Rows", tag: "00280010" },
-                { name: "Columns", tag: "00280011" },
-                { name: "Slice Thickness", tag: "00180050" },
-                { name: "Pixel Spacing", tag: "00280030" },
-              ];
+    // Extract metadata for the current image
+    try {
+      const dicomMetaData: Record<string, any> = {};
 
-              tags.forEach(({ name, tag }) => {
-                try {
-                  const value = metaData.get("dicomParser", imageId, tag);
-                  if (value !== undefined) {
-                    dicomMetaData[name] = value;
-                  }
-                } catch (error) {
-                  console.log(`Error getting metadata for ${name}:`, error);
-                }
-              });
+      // First check if cornerstone metaData provider is available
+      if (!metaData || !metaData.get) {
+        console.error("Cornerstone metadata API not available");
+        return;
+      }
 
-              setMetadata(dicomMetaData);
-            } catch (error) {
-              console.error("Error retrieving metadata:", error);
-            }
+      // Try both cornerstone.metaData.get and the metaData global if it exists
+      const getMetadata = (tag: string) => {
+        // Try different ways to access metadata
+        try {
+          // Try direct cornerstone approach first
+          return metaData.get(tag, imageId);
+        } catch (e1) {
+          console.log(`Failed with cornerstone.metaData.get for ${tag}:`, e1);
+          try {
+            // Try the global metaData if available
+            return metaData?.get?.(tag, imageId);
+          } catch (e2) {
+            console.log(`Failed with global metaData.get for ${tag}:`, e2);
+            return undefined;
           }
         }
       };
 
-      // Remove existing event listeners if any
-      elementRef.current.removeEventListener(
-        "cornerstoneimagerendered",
-        imageRenderedCallback
-      );
-      // Add the event listener
-      elementRef.current.addEventListener(
-        "cornerstoneimagerendered",
-        imageRenderedCallback
-      );
+      // Common DICOM tags to display
+      const tagsToRetrieve = [
+        { name: "Patient Name", tag: "00100010" },
+        { name: "Patient ID", tag: "00100020" },
+        { name: "Patient Birth Date", tag: "00100030" },
+        { name: "Study Date", tag: "00080020" },
+        { name: "Study Time", tag: "00080030" },
+        { name: "Study Description", tag: "00081030" },
+        { name: "Series Description", tag: "0008103E" },
+        { name: "Modality", tag: "00080060" },
+        { name: "Image Number", tag: "00200013" },
+        { name: "Rows", tag: "00280010" },
+        { name: "Columns", tag: "00280011" },
+        { name: "Slice Thickness", tag: "00180050" },
+        { name: "Pixel Spacing", tag: "00280030" },
+      ];
 
-      // Set image stack and render
-      await viewport.setStack(imageIds);
-      viewport.render();
+      console.log("Attempting to retrieve metadata for tags...");
+      
+      tagsToRetrieve.forEach(({ name, tag }) => {
+        try {
+          const value = getMetadata(tag);
+          console.log(`${name} (${tag}):`, value);
+          
+          if (value !== undefined) {
+            dicomMetaData[name] = value;
+          }
+        } catch (error) {
+          console.log(`Error getting metadata for ${name}:`, error);
+        }
+      });
+
+      console.log("Retrieved metadata:", dicomMetaData);
+      setMetadata(dicomMetaData);
+    } catch (error) {
+      console.error("Top-level error retrieving metadata:", error);
+    }
+  } else {
+    console.log("Image ID not found in imageIdsRef.current");
+  }
+};
+
+// For debugging, check if the DOM element exists
+if (!elementRef.current) {
+  console.error("Element reference is null - cannot attach event listener");
+} else {
+  console.log("Element reference exists, attaching listener");
+  
+  // Remove existing event listeners if any
+  elementRef.current.removeEventListener(
+    "cornerstoneimagerendered",
+    imageRenderedCallback
+  );
+  
+  // Add the event listener
+  elementRef.current.addEventListener(
+    "cornerstoneimagerendered",
+    imageRenderedCallback
+  );
+  
+  console.log("Event listener attached");
+}
+
+// Log before setting stack
+console.log("About to set image stack", imageIds);
+
+// Set image stack and render
+try {
+  await viewport.setStack(imageIds);
+  console.log("Stack set successfully");
+  viewport.render();
+  console.log("Render called");
+} catch (err) {
+  console.error("Error setting stack or rendering:", err);
+}
+
+// Remove existing event listeners if any
+elementRef.current.removeEventListener(
+  "cornerstoneimagerendered",
+  imageRenderedCallback
+);
+// Add the event listener
+elementRef.current.addEventListener(
+  "cornerstoneimagerendered",
+  imageRenderedCallback
+);
+
+// Set image stack and render
+await viewport.setStack(imageIds);
+viewport.render();
     };
 
     setup();
