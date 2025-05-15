@@ -1,6 +1,6 @@
 import { wadouri } from "@cornerstonejs/dicom-image-loader";
 
-export async function loadFilesAndGenerateImageIds(files: File[]): Promise<string[]> {
+export async function loadFilesAndGenerateImageIds(files: File[]) {
   const imageIds: string[] = [];
 
   for (const file of files) {
