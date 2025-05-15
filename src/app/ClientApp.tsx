@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 
-const Viewer = dynamic(() => import("@/components/Viewer"), { ssr: false })
+const Viewer = dynamic(() => import("@/components/viewer/index"), { ssr: false })
 
 function ClientApp() {
   return (
