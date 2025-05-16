@@ -26,8 +26,6 @@ export function useViewerSetup(
       const toolGroup = ToolGroupManager.createToolGroup(toolGroupId);
       if (!toolGroup) return;
       toolGroupRef.current = toolGroup;
-
-      // Add tools to the group
       toolGroup.addTool(StackScrollTool.toolName)
       tools.forEach((tool) => {
         toolGroup.addTool(tool.name);
