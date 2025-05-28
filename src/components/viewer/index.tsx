@@ -6,15 +6,22 @@ import { useToolChange } from "./useToolChange";
 
 const Viewer = () => {
   const elementRef = useRef<HTMLDivElement>(null);
-
   const [files, setFiles] = useState<File[]>([]);
   const [activeTool, setActiveTool] = useState<string>(tools[0].name);
-
   // we only need the *setter* here – the value itself isn’t read
   const [, setImageIds] = useState<string[]>([]);
   const { handleToolChange } = useToolChange("stackToolGroup");
 
   useViewerSetup(elementRef, files, activeTool, setImageIds);
+
+  function handleFilePick(event: React.ChangeEvent<HTMLInputElement>) {
+    
+    if (files != null) {
+      setFiles([])
+    }
+    setFiles(Array.from(event.target.files||[]))
+
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -23,7 +30,7 @@ const Viewer = () => {
         type="file"
         multiple
         accept=".dcm"
-        onChange={(e) => setFiles(Array.from(e.target.files || []))}
+        onChange={(e) => handleFilePick(e)}
       />
 
       <div className="flex flex-wrap gap-2 p-2 bg-[#1E1E1E] rounded">

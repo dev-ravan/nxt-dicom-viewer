@@ -10,6 +10,7 @@ export function useViewerSetup(
   files: File[],
   activeTool: string,
   setImageIds: (ids: string[]) => void
+  
 ) {
   const running = useRef(false);
   const toolGroupRef = useRef<ReturnType<typeof ToolGroupManager.createToolGroup> | null>(null);
