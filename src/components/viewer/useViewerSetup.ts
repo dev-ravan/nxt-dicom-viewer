@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import { initializeCornerstone } from "./cornerstoneSetup";
-import { ToolGroupManager, Enums as ToolEnums, StackScrollTool } from "@cornerstonejs/tools";
+import { ToolGroupManager, Enums as ToolEnums, StackScrollTool, PanTool, ZoomTool } from "@cornerstonejs/tools";
 import { RenderingEngine, Enums, type Types } from "@cornerstonejs/core";
 import { loadFilesAndGenerateImageIds } from "./loadImageIds";
-import { tools, LengthTool } from "./toolsConfig";
+import { tools } from "./toolsConfig";
 
 export function useViewerSetup(
   elementRef: React.RefObject<HTMLDivElement | null>,
@@ -35,8 +35,11 @@ export function useViewerSetup(
       toolGroup.setToolActive(StackScrollTool.toolName, {
         bindings: [{ mouseButton: ToolEnums.MouseBindings.Wheel }],
       });
+      toolGroup.setToolActive(ZoomTool.toolName, {
+        bindings: [{ mouseButton: ToolEnums.MouseBindings.Wheel_Primary }],
+      });
 
-      toolGroup.setToolActive(activeTool || LengthTool.toolName, {
+      toolGroup.setToolActive(activeTool || PanTool.toolName, {
         bindings: [{ mouseButton: ToolEnums.MouseBindings.Primary }],
       });
 
