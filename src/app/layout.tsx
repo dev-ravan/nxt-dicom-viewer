@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Next Learning App",
-  description: "Created by Velmurugan R",
+  title: "Dicom viwer app",
+  description: "This project done by Manisha A C",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="p-4">
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
