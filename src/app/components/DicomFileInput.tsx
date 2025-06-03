@@ -4,9 +4,17 @@ import React, { useEffect } from "react";
 import * as cornerstone from "cornerstone-core";
 import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
 import * as dicomParser from "dicom-parser";
+import * as cornerstoneMath from "cornerstone-math";
+import * as cornerstoneTools from "cornerstone-tools";
+
+import Hammer from "hammerjs";
+import { extractMetaFromFile } from "../lib/extractMetaFromFile";
 
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
+cornerstoneTools.external.cornerstone = cornerstone;
+cornerstoneTools.external.Hammer = Hammer;
+cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 
 export default function DicomFileInput({
   onMetadataExtracted,
@@ -17,60 +25,54 @@ export default function DicomFileInput({
     const element = document.getElementById("dicom-image");
     if (element) {
       cornerstone.enable(element);
+
+      // Only init once in browser environment
+      if (!(window as any)._cornerstoneToolsInitialized) {
+        cornerstoneTools.init();
+        cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
+        cornerstoneTools.setToolActive("StackScrollMouseWheel", {
+          mouseButtonMask: 1,
+        });
+        (window as any)._cornerstoneToolsInitialized = true;
+      }
     }
   }, []);
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(file);
+    const imageIds = Array.from(files).map(file =>
+      cornerstoneWADOImageLoader.wadouri.fileManager.add(file)
+    );
 
-    try {
-      const image = await cornerstone.loadAndCacheImage(imageId);
-      const element = document.getElementById("dicom-image");
-      if (element) {
-        cornerstone.displayImage(element, image);
+    const element = document.getElementById("dicom-image");
+    if (!element) return;
+
+    const stack = {
+      currentImageIdIndex: 0,
+      imageIds,
+    };
+
+    const firstImage = await cornerstone.loadAndCacheImage(imageIds[0]);
+    cornerstone.displayImage(element, firstImage);
+
+    cornerstoneTools.addStackStateManager(element, ["stack"]);
+    cornerstoneTools.addToolState(element, "stack", stack);
+
+    extractMetaFromFile(files[0], onMetadataExtracted);
+
+    // Handle metadata on image change
+    element.addEventListener("cornerstoneimageloaded", () => {
+      const index =
+        cornerstoneTools.getToolState(element, "stack")?.data?.[0]
+          ?.currentImageIdIndex ?? 0;
+      if (files[index]) {
+        extractMetaFromFile(files[index], onMetadataExtracted);
       }
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const arrayBuffer = e.target?.result;
-          if (!arrayBuffer || typeof arrayBuffer === "string") return;
-
-          const byteArray = new Uint8Array(arrayBuffer);
-          const dataSet = dicomParser.parseDicom(byteArray);
-
-          const elements = dataSet.elements;
-          const metaList: { tag: string; value: string }[] = [];
-
-          for (const tag in elements) {
-            try {
-              const value = dataSet.string(tag);
-              if (value) {
-                metaList.push({
-                  tag: tag.toUpperCase(),
-                  value,
-                });
-              }
-            } catch {
-              // Skip non-string fields
-            }
-          }
-
-          onMetadataExtracted(metaList);
-        } catch (err) {
-          console.error("Failed to parse DICOM metadata", err);
-        }
-      };
-
-      reader.readAsArrayBuffer(file);
-    } catch (err) {
-      console.error("Failed to load image", err);
-    }
+    });
   };
 
   return (
@@ -78,6 +80,7 @@ export default function DicomFileInput({
       type="file"
       accept=".dcm"
       onChange={handleFileChange}
+      multiple
       className="border p-2"
     />
   );

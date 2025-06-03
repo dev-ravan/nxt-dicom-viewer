@@ -1,5 +1,3 @@
-// DicomMetadata.tsx
-
 import React from "react";
 
 type MetaDataItem = {
