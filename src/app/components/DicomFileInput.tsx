@@ -6,7 +6,6 @@ import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
 import * as dicomParser from "dicom-parser";
 import * as cornerstoneMath from "cornerstone-math";
 import * as cornerstoneTools from "cornerstone-tools";
-
 import Hammer from "hammerjs";
 import { extractMetaFromFile } from "../lib/extractMetaFromFile";
 
@@ -26,13 +25,10 @@ export default function DicomFileInput({
     if (element) {
       cornerstone.enable(element);
 
-      // Only init once in browser environment
       if (!(window as any)._cornerstoneToolsInitialized) {
         cornerstoneTools.init();
         cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
-        cornerstoneTools.setToolActive("StackScrollMouseWheel", {
-          mouseButtonMask: 1,
-        });
+        cornerstoneTools.setToolActive("StackScrollMouseWheel", {}); 
         (window as any)._cornerstoneToolsInitialized = true;
       }
     }
@@ -64,11 +60,10 @@ export default function DicomFileInput({
 
     extractMetaFromFile(files[0], onMetadataExtracted);
 
-    // Handle metadata on image change
-    element.addEventListener("cornerstoneimageloaded", () => {
-      const index =
-        cornerstoneTools.getToolState(element, "stack")?.data?.[0]
-          ?.currentImageIdIndex ?? 0;
+    //  Update metadata on scroll
+    element.addEventListener("cornerstoneimagerendered", () => {
+      const stackData = cornerstoneTools.getToolState(element, "stack")?.data?.[0];
+      const index = stackData?.currentImageIdIndex ?? 0;
       if (files[index]) {
         extractMetaFromFile(files[index], onMetadataExtracted);
       }
