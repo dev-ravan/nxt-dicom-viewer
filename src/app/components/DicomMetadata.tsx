@@ -8,7 +8,7 @@ type MetaDataItem = {
 export default function DicomMetadata({
   metaDataList = [],
 }: {
-  metaDataList?: MetaDataItem[]; // optional + default
+  metaDataList?: MetaDataItem[];
 }) {
   return (
     <div className="bg-white p-4 rounded shadow">

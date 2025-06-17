@@ -9,6 +9,7 @@ import * as cornerstoneTools from "cornerstone-tools";
 import Hammer from "hammerjs";
 import { extractMetaFromFile } from "../lib/extractMetaFromFile";
 
+// External bindings
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 cornerstoneTools.external.cornerstone = cornerstone;
@@ -22,15 +23,20 @@ export default function DicomFileInput({
 }) {
   useEffect(() => {
     const element = document.getElementById("dicom-image");
-    if (element) {
-      cornerstone.enable(element);
+    if (!element) return;
 
-      if (!(window as any)._cornerstoneToolsInitialized) {
-        cornerstoneTools.init();
+    cornerstone.enable(element);
+
+    if (!(window as any)._cornerstoneToolsInitialized) {
+      cornerstoneTools.init();
+
+      if (!cornerstoneTools.store.state.tools["StackScrollMouseWheel"]) {
         cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
-        cornerstoneTools.setToolActive("StackScrollMouseWheel", {}); 
-        (window as any)._cornerstoneToolsInitialized = true;
       }
+
+      cornerstoneTools.setToolPassive("StackScrollMouseWheel");
+
+      (window as any)._cornerstoneToolsInitialized = true;
     }
   }, []);
 
@@ -40,7 +46,7 @@ export default function DicomFileInput({
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    const imageIds = Array.from(files).map(file =>
+    const imageIds = Array.from(files).map((file) =>
       cornerstoneWADOImageLoader.wadouri.fileManager.add(file)
     );
 
@@ -60,9 +66,9 @@ export default function DicomFileInput({
 
     extractMetaFromFile(files[0], onMetadataExtracted);
 
-    //  Update metadata on scroll
     element.addEventListener("cornerstoneimagerendered", () => {
-      const stackData = cornerstoneTools.getToolState(element, "stack")?.data?.[0];
+      const stackData =
+        cornerstoneTools.getToolState(element, "stack")?.data?.[0];
       const index = stackData?.currentImageIdIndex ?? 0;
       if (files[index]) {
         extractMetaFromFile(files[index], onMetadataExtracted);

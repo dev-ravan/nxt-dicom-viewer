@@ -17,7 +17,6 @@ const HIGHLIGHTED_TAGS: { [tag: string]: string } = {
 
 export default function DicomViewer() {
   const normalizeTag = (rawTag: string): string => {
-    // Convert "X00080080" to "0008,0080"
     if (rawTag.startsWith("X") && rawTag.length === 9) {
       return `${rawTag.slice(1, 5)},${rawTag.slice(5)}`;
     }
@@ -31,36 +30,28 @@ export default function DicomViewer() {
     { label: string; value: string }[]
   >([]);
 
-const handleMetadata = (metaDataList: { tag: string; value: string }[]) => {
-  const highlights: { label: string; value: string }[] = [];
-  const others: { label: string; value: string }[] = [];
+  const handleMetadata = (metaDataList: { tag: string; value: string }[]) => {
+    const highlights: { label: string; value: string }[] = [];
+    const others: { label: string; value: string }[] = [];
+    let fieldCounter = 1;
 
-  let fieldCounter = 1;
+    for (const item of metaDataList) {
+      const normalizedTag = normalizeTag(item.tag.toUpperCase());
+      const label = HIGHLIGHTED_TAGS[normalizedTag];
+      const cleanedValue = item.value.replace(/[^\x20-\x7E]/g, "").trim();
 
-  for (const item of metaDataList) {
-    const normalizedTag = normalizeTag(item.tag.toUpperCase());
-    const label = HIGHLIGHTED_TAGS[normalizedTag];
+      if (!cleanedValue) continue;
 
-    //  Clean non-printable characters
-    const cleanedValue = item.value.replace(/[^\x20-\x7E]/g, '').trim();
-
-    // Skip empty values
-    if (!cleanedValue) continue;
-
-    if (label) {
-      highlights.push({ label, value: cleanedValue });
-    } else {
-      others.push({
-        label: `Field ${fieldCounter++}`,
-        value: cleanedValue,
-      });
+      if (label) {
+        highlights.push({ label, value: cleanedValue });
+      } else {
+        others.push({ label: `Field ${fieldCounter++}`, value: cleanedValue });
+      }
     }
-  }
 
-  setHighlightedData(highlights);
-  setOtherMetaData(others);
-};
-
+    setHighlightedData(highlights);
+    setOtherMetaData(others);
+  };
 
   return (
     <div className="p-4">
@@ -71,12 +62,17 @@ const handleMetadata = (metaDataList: { tag: string; value: string }[]) => {
       </div>
 
       <div className="flex flex-row gap-6">
-        {/* DICOM image */}
+        {/* DICOM image viewer */}
         <div className="w-[1500px] h-[800px] bg-black">
-          <div id="dicom-image" className="w-full h-full" />
+          <div
+            id="dicom-image"
+            className="w-full h-full"
+            tabIndex={0}
+            style={{ outline: "none" }}
+          />
         </div>
 
-        {/* Metadata */}
+        {/* Metadata display */}
         <div className="flex-1 overflow-auto max-h-[800px] space-y-4">
           <div className="bg-white p-4 rounded shadow">
             <h2 className="text-lg font-semibold mb-2">Patient Information</h2>
