@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import DicomFileInput from "./DicomFileInput";
-import DicomMetadata from "./DicomMetadata";
+import DicomFileInput from "../components/DicomFileInput";
+import DicomMetadata from "../components/DicomMetadata";
 import { useViewerSetup } from "./useViewerSetup";
 import { tools } from "./toolsConfig";
 import { useToolChange } from "./useToolChange";

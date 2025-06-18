@@ -26,20 +26,26 @@ export function useViewerSetup(
   const renderingEngineRef = useRef<RenderingEngine | null>(null);
 
   useEffect(() => {
-    const setup = async () => {
-      if (running.current || files.length === 0 || !elementRef.current) return;
-      running.current = true;
+  const setup = async () => {
+    if (running.current || files.length === 0 || !elementRef.current) return;
+    running.current = true;
 
-      // Initialize Cornerstone
-      await initializeCornerstone();
+    await initializeCornerstone();
 
-      const toolGroupId = "stackToolGroup";
-      const toolGroup = ToolGroupManager.createToolGroup(toolGroupId);
-      if (!toolGroup) {
-        console.error("❌ Failed to create tool group");
-        return;
-      }
-      toolGroupRef.current = toolGroup;
+    const toolGroupId = "stackToolGroup";
+    const toolGroup = ToolGroupManager.createToolGroup(toolGroupId);
+    if (!toolGroup) {
+      console.error("Tool group creation failed");
+      return;
+    }
+
+    
+    // ✅ Check for WebGL2 support
+    if (typeof WebGL2RenderingContext === "undefined") {
+      console.error("WebGL2 not supported in this browser.");
+      return;
+    }
+    toolGroupRef.current = toolGroup;
 
       // Add tools
       toolGroup.addTool(StackScrollTool.toolName);
@@ -53,8 +59,7 @@ export function useViewerSetup(
       toolGroup.setToolActive(activeTool || LengthTool.toolName, {
         bindings: [{ mouseButton: ToolEnums.MouseBindings.Primary }],
       });
-
-      tools.forEach((tool) => {
+ tools.forEach((tool) => {
         if (tool.name !== activeTool) {
           toolGroup.setToolPassive(tool.name);
         }
@@ -64,13 +69,13 @@ export function useViewerSetup(
       const imageIds = await loadFilesAndGenerateImageIds(files);
       setImageIds(imageIds);
 
-      const renderingEngineId = "myRenderingEngine";
-      const viewportId = "US";
+     const renderingEngineId = "myRenderingEngine";
+     const viewportId = "US";
 
-      const renderingEngine = new RenderingEngine(renderingEngineId);
-      renderingEngineRef.current = renderingEngine;
+    const renderingEngine = new RenderingEngine(renderingEngineId);
+    renderingEngineRef.current = renderingEngine;
 
-      renderingEngine.enableElement({
+    renderingEngine.enableElement({
         viewportId,
         type: Enums.ViewportType.STACK,
         element: elementRef.current,
@@ -84,8 +89,9 @@ export function useViewerSetup(
 
       await viewport.setStack(imageIds);
       viewport.render();
-    };
+  };
 
-    setup();
-  }, [files, activeTool, elementRef, setImageIds]);
+  setup();
+}, [files, activeTool]);
+
 }
