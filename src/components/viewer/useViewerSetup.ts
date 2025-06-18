@@ -1,7 +1,17 @@
+"use client";
+
 import { useEffect, useRef } from "react";
 import { initializeCornerstone } from "./cornerstoneSetup";
-import { ToolGroupManager, Enums as ToolEnums, StackScrollTool } from "@cornerstonejs/tools";
-import { RenderingEngine, Enums, type Types } from "@cornerstonejs/core";
+import {
+  ToolGroupManager,
+  Enums as ToolEnums,
+  StackScrollTool,
+} from "@cornerstonejs/tools";
+import {
+  RenderingEngine,
+  Enums,
+  type Types,
+} from "@cornerstonejs/core";
 import { loadFilesAndGenerateImageIds } from "./loadImageIds";
 import { tools, LengthTool } from "./toolsConfig";
 
@@ -20,17 +30,22 @@ export function useViewerSetup(
       if (running.current || files.length === 0 || !elementRef.current) return;
       running.current = true;
 
+      // Initialize Cornerstone
       await initializeCornerstone();
 
       const toolGroupId = "stackToolGroup";
       const toolGroup = ToolGroupManager.createToolGroup(toolGroupId);
-      if (!toolGroup) return;
+      if (!toolGroup) {
+        console.error("❌ Failed to create tool group");
+        return;
+      }
       toolGroupRef.current = toolGroup;
-      toolGroup.addTool(StackScrollTool.toolName)
-      tools.forEach((tool) => {
-        toolGroup.addTool(tool.name);
-      });
 
+      // Add tools
+      toolGroup.addTool(StackScrollTool.toolName);
+      tools.forEach((tool) => toolGroup.addTool(tool.name));
+
+      // Bind tools to mouse buttons
       toolGroup.setToolActive(StackScrollTool.toolName, {
         bindings: [{ mouseButton: ToolEnums.MouseBindings.Wheel }],
       });
@@ -45,14 +60,16 @@ export function useViewerSetup(
         }
       });
 
+      // Load image stack
       const imageIds = await loadFilesAndGenerateImageIds(files);
       setImageIds(imageIds);
 
       const renderingEngineId = "myRenderingEngine";
+      const viewportId = "US";
+
       const renderingEngine = new RenderingEngine(renderingEngineId);
       renderingEngineRef.current = renderingEngine;
 
-      const viewportId = "US";
       renderingEngine.enableElement({
         viewportId,
         type: Enums.ViewportType.STACK,
@@ -63,7 +80,6 @@ export function useViewerSetup(
       });
 
       const viewport = renderingEngine.getViewport(viewportId) as Types.IStackViewport;
-
       toolGroup.addViewport(viewportId, renderingEngineId);
 
       await viewport.setStack(imageIds);

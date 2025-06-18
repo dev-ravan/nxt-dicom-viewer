@@ -1,7 +1,5 @@
 import { init as csRenderInit } from "@cornerstonejs/core";
-import {
-  init as dicomLoaderInit,
-} from "@cornerstonejs/dicom-image-loader";
+import { init as dicomLoaderInit } from "@cornerstonejs/dicom-image-loader";
 import {
   init as toolsInit,
   addTool,
@@ -17,9 +15,5 @@ export async function initializeCornerstone() {
   await dicomLoaderInit({ maxWebWorkers: 1 });
   await toolsInit();
 
-  addTool(StackScrollTool);
-  addTool(PanTool);
-  addTool(ZoomTool);
-  addTool(LengthTool);
-  addTool(ProbeTool);
+  [StackScrollTool, PanTool, ZoomTool, LengthTool, ProbeTool].forEach(addTool);
 }
