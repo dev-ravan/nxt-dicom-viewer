@@ -11,6 +11,7 @@ import {
   RenderingEngine,
   Enums,
   type Types,
+  metaData,
 } from "@cornerstonejs/core";
 import { loadFilesAndGenerateImageIds } from "./loadImageIds";
 import { tools, LengthTool } from "./toolsConfig";
@@ -19,7 +20,8 @@ export function useViewerSetup(
   elementRef: React.RefObject<HTMLDivElement | null>,
   files: File[],
   activeTool: string,
-  setImageIds: (ids: string[]) => void
+  setImageIds: (ids: string[]) => void,
+  onImageIndexChange: (meta: { tag: string; value: string }[]) => void
 ) {
   const running = useRef(false);
   const toolGroupRef = useRef<ReturnType<typeof ToolGroupManager.createToolGroup> | null>(null);
@@ -84,8 +86,23 @@ export function useViewerSetup(
 
       await viewport.setStack(imageIds);
       viewport.render();
+
+      viewport.setImageIdIndex(0); // Ensure first image renders
+
+      // ✅ Listen to image change event
+      viewport.element.addEventListener('cornerstoneimagerendered', () => {
+        const imageId = viewport.getCurrentImageId();
+        const meta = metaData.get("generalSeriesModule", imageId);
+        if (meta) {
+          const parsed: { tag: string; value: string }[] = Object.entries(meta).map(([key, val]) => ({
+            tag: key,
+            value: String(val)
+          }));
+          onImageIndexChange(parsed);
+        }
+      });
     };
 
     setup();
-  }, [files, activeTool, elementRef, setImageIds]);
+  }, [files, activeTool, elementRef]);
 }

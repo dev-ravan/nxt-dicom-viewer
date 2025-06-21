@@ -26,8 +26,7 @@ export default function Viewer() {
   const [otherMetaData, setOtherMetaData] = useState<{ label: string; value: string }[]>([]);
   const { handleToolChange } = useToolChange("stackToolGroup");
 
-  useViewerSetup(viewerRef, files, activeTool, setImageIds);
-
+  // ✅ MUST BE DEFINED BEFORE useViewerSetup
   const handleMetadata = (metaDataList: { tag: string; value: string }[]) => {
     const highlights: { label: string; value: string }[] = [];
     const others: { label: string; value: string }[] = [];
@@ -46,6 +45,15 @@ export default function Viewer() {
     setHighlightedData(highlights);
     setOtherMetaData(others);
   };
+
+  // ✅ Now this runs AFTER handleMetadata is declared
+  useViewerSetup(
+    viewerRef,
+    files,
+    activeTool,
+    setImageIds,
+    handleMetadata
+  );
 
   return (
     <div className="p-4">

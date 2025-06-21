@@ -10,13 +10,24 @@ export default function DicomFileInput({
   onFilesSelected: (files: File[]) => void;
   onMetadataExtracted: (data: { tag: string; value: string }[]) => void;
 }) {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const files = Array.from(event.target.files || []);
+  if (files.length === 0) return;
 
-    onFilesSelected([file]);
+  onFilesSelected(files);
 
-    const reader = new FileReader();
+  const reader = new FileReader();
+  const metaList: { tag: string; value: string }[] = [];
+
+  let fileIndex = 0;
+
+  const processFile = () => {
+    if (fileIndex >= files.length) {
+      onMetadataExtracted(metaList);
+      return;
+    }
+
+    const file = files[fileIndex++];
     reader.onload = function (e) {
       try {
         const arrayBuffer = e.target?.result;
@@ -24,7 +35,6 @@ export default function DicomFileInput({
 
         const byteArray = new Uint8Array(arrayBuffer);
         const dataSet = dicomParser.parseDicom(byteArray);
-        const metaList: { tag: string; value: string }[] = [];
 
         for (const tag in dataSet.elements) {
           try {
@@ -35,14 +45,28 @@ export default function DicomFileInput({
           } catch {}
         }
 
-        onMetadataExtracted(metaList);
+        processFile();
       } catch (err) {
         console.error("Failed to parse metadata", err);
+        processFile();
       }
     };
 
     reader.readAsArrayBuffer(file);
   };
 
-  return <input type="file" accept=".dcm" onChange={handleFileChange} className="border p-2" />;
+  processFile();
+};
+
+
+  return (
+<input
+  type="file"
+  accept=".dcm"
+  multiple
+  onChange={handleFileChange}
+  onClick={(e) => ((e.target as HTMLInputElement).value = "")}
+  className="border p-2"
+/>
+)
 }
