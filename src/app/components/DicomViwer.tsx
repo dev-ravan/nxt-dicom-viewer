@@ -6,13 +6,14 @@ import DicomMetadata from "./DicomMetadata";
 
 // Tags of interest (uppercase format)
 const HIGHLIGHTED_TAGS: { [tag: string]: string } = {
+  "0008,0080": "Hospital Name",
   "0010,0010": "Patient Name",
   "0010,0020": "Patient ID",
-  "0008,0080": "Hospital Name",
   "0008,0020": "Study Date",
   "0008,0030": "Study Time",
   "0008,0060": "Modality",
-  "0018,5010": "Probe Type",
+  "0008,1030": "Study description",
+  "0008,0090": "Referring Physician's Name"
 };
 
 export default function DicomViewer() {
@@ -30,28 +31,35 @@ export default function DicomViewer() {
     { label: string; value: string }[]
   >([]);
 
-  const handleMetadata = (metaDataList: { tag: string; value: string }[]) => {
-    const highlights: { label: string; value: string }[] = [];
-    const others: { label: string; value: string }[] = [];
-    let fieldCounter = 1;
+const handleMetadata = (metaDataList: { tag: string; value: string }[]) => {
+  const highlights: { label: string; value: string }[] = [];
+  const others: { label: string; value: string }[] = [];
+  let fieldCounter = 1;
 
-    for (const item of metaDataList) {
-      const normalizedTag = normalizeTag(item.tag.toUpperCase());
-      const label = HIGHLIGHTED_TAGS[normalizedTag];
-      const cleanedValue = item.value.replace(/[^\x20-\x7E]/g, "").trim();
+  for (const item of metaDataList) {
+    const normalizedTag = normalizeTag(item.tag.toUpperCase());
+    const label = HIGHLIGHTED_TAGS[normalizedTag];
+    const cleanedValue = item.value.replace(/[^\x20-\x7E]/g, "").trim();
 
-      if (!cleanedValue) continue;
+    if (!cleanedValue) continue;
 
-      if (label) {
-        highlights.push({ label, value: cleanedValue });
-      } else {
-        others.push({ label: `Field ${fieldCounter++}`, value: cleanedValue });
+    if (label) {
+      highlights.push({ label, value: cleanedValue });
+    } else {
+      // Skip Field 27
+      if (fieldCounter === 27) {
+        fieldCounter++;
+        continue;
       }
+      others.push({ label: `Field ${fieldCounter++}`, value: cleanedValue });
     }
+  }
 
-    setHighlightedData(highlights);
-    setOtherMetaData(others);
-  };
+  setHighlightedData(highlights);
+  setOtherMetaData(others);
+};
+
+
 
   return (
     <div className="p-4">
